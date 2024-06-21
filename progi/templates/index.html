@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Успеваемость студентов</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1 style="text-align:center;">Успеваемость студентов</h1>
+
+        <table class="table table-striped" id="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Имя</th>
+                    <th>Фамилия</th>
+                    <th>Курс</th>
+                    <th>Факультет</th>
+                    <th>Удаление</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+        <form id="studentForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" ><br>
+
+            <label for="last_name">Last Name:</label>
+            <input type="text" id="last_name" name="last_name" required><br>
+
+            <label for="course">Course:</label>
+            <input type="text" id="course" name="course" required><br>
+
+            <label for="fac">Faculty:</label>
+            <input type="text" id="fac" name="fac" required><br>
+
+            <input type="submit" value="Submit">
+        </form>
+
+</div>
+
+</body>
+</html>
+
+
+<script>
+
+document.getElementById('studentForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const formData = new FormData(event.target);
+                const name = formData.get('name');
+                const last_name = formData.get('last_name');
+                const course = formData.get('course');
+                const fac = formData.get('fac');
+
+                await sendData(name, last_name, course, fac);
+            });
+
+let table = document.getElementById('table')
+
+function printStudent(id, name, last_name, course, fac) {
+    var row = table.insertRow(-1);
+    var cells = [row.insertCell(0), row.insertCell(1), row.insertCell(2), row.insertCell(3), row.insertCell(4), row.insertCell(5)];
+    cells[0].innerHTML = table.rows.length-1;
+    cells[1].innerHTML = name;
+    cells[2].innerHTML = last_name;
+    cells[3].innerHTML = course;
+    cells[4].innerHTML = fac;
+    cells[5].innerHTML = '<button class="btn btn-danger" onclick="deleteStudent(' + id + ')">Delete</button>';
+}
+
+    async function sendData(name, last_name, course, fac) {
+        const data = {
+            name: name,
+            last_name: last_name,
+            course: course,
+            fac: fac,
+        };
+
+        const response = await fetch('set-student/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') // Добавьте CSRF токен
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.text();
+        console.log(result);
+        window.location.reload();
+    }
+
+    async function deleteStudent(id) {
+        const data = {
+            id: id,
+        };
+
+        const response = await fetch('delete-student/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') // Добавьте CSRF токен
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.text();
+        console.log(result);
+        window.location.reload();
+    }
+
+
+    async function getStudents() {
+        try {
+            const response = await fetch('get-students/', {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken') // Получаем CSRF токен
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const result = await response.json(); // Получаем JSON данные
+            console.log(result);
+
+            result.data.map(student => printStudent(student[0], student[1], student[2], student[3], student[4]));
+
+
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    getStudents()
+</script>
